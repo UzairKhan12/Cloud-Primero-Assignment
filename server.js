@@ -44,4 +44,4 @@ const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
 });
 
-require("./config/socket")(server);
+require("./app/events/Chat")(server);

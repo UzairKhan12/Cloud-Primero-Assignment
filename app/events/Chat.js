@@ -12,7 +12,7 @@ module.exports = server => {
 
             try {
 
-                const AccessToken = require("../app/services/AccessToken");
+                const AccessToken = require("../services/AccessToken");
 
                 let user_id = await AccessToken.validateAccessToken(socket.handshake.query.token);
 
@@ -35,7 +35,7 @@ module.exports = server => {
         }
     }).on('connection', (socket) => {
 
-        const ChatRoom = require("../app/services/ChatRoom");
+        const ChatRoom = require("../services/ChatRoom");
 
         socket.on("startChat", async (data) => {
 
