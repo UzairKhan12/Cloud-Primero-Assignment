@@ -1,5 +1,7 @@
+require('dotenv').config();
+
 module.exports = {
-    mongodb_url: "mongodb://localhost:27017/assignment",
-    server_port: 8081,
-    base_url: 'http://localhost'
+    mongodb_url: process.env.MONGODB_URL ,
+    server_port: process.env.PORT || 8081,
+    base_url: process.env.BASE_URL || 'http://localhost'
 };
