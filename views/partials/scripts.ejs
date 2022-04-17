@@ -1,0 +1,79 @@
+<!-- jQuery -->
+<script src="<%= baseUrl %>/assets/scripts/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="<%= baseUrl %>/assets/scripts/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="<%= baseUrl %>/assets/scripts/adminlte.min.js"></script>
+
+<script type="text/javascript">
+
+    function showErrorMsgs(errs) {
+
+        var response = errs.responseJSON;
+
+        $('.text-danger').html(response.msg);
+    }
+
+    function logOut() {
+
+        $.ajax({
+            url: '<%- baseUrl %>/api/logout',
+            type: 'DELETE',
+            success: function (result) {
+
+                localStorage.removeItem('user');
+
+                window.location = '<%- baseUrl %>/login';
+            }
+        });
+    }
+
+    $(document).on('submit', '#loginSignupForm', function (event) {
+
+        event.preventDefault();
+
+        $('.text-danger').html('');
+
+        let form = $(this);
+
+        let btn = form.find('.btn');
+
+        btn.attr('disabled', true);
+
+        var formData = new FormData(this);
+
+        $.ajax({
+            type: 'POST',
+            url: form.attr('action'),
+            data: formData,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+
+                localStorage.setItem('user', JSON.stringify(data.data));
+
+                window.location = '<%- baseUrl %>/'
+
+                btn.attr('disabled', false);
+
+            }, error: function (err) {
+                btn.attr('disabled', false);
+
+                showErrorMsgs(err);
+            }
+        });
+    });
+
+    $.ajaxSetup({
+        statusCode: {
+            401: function (data) {
+                localStorage.removeItem('user');
+
+                window.location = '<%- baseUrl %>/login';
+            }
+        },
+        headers: {"X-Access-Token": localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : ''}
+    });
+
+</script>

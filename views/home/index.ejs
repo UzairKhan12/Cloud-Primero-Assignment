@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head'); %>
+
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="javascript:;" onclick="logOut()" class="nav-link">Logout</a>
+            </li>
+        </ul>
+
+    </nav>
+    <!-- /.navbar -->
+
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="/" class="brand-link">
+            <span class="brand-text font-weight-light">Chat App</span>
+        </a>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar user panel (optional) -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+
+                <div class="info">
+                    <a href="#" class="d-block" id="user_name"></a>
+                </div>
+            </div>
+
+            <!-- SidebarSearch Form -->
+            <div class="form-inline">
+                <div class="input-group">
+                    <input class="form-control form-control-sidebar" type="search" placeholder="Search" id="search-user"
+                           aria-label="Search">
+                </div>
+            </div>
+
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" id="users"
+                    data-accordion="false">
+                </ul>
+            </nav>
+            <!-- /.sidebar-menu -->
+        </div>
+        <!-- /.sidebar -->
+    </aside>
+
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Chat</h1>
+                    </div>
+                </div>
+            </div><!-- /.container-fluid -->
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card card-primary card-outline direct-chat direct-chat-primary"
+                             style="height: 595px">
+                            <div class="card-header">
+                                <h3 class="card-title">Direct Chat</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="direct-chat-messages" style="height: 100%;">
+
+                                </div>
+
+                            </div>
+                            <div class="card-footer" style="display: none">
+                                <div class="input-group">
+                                    <input type="text" name="message" placeholder="Type Message ..."
+                                           onkeyup="sendTypedMessage($(this),event)"
+                                           class="form-control">
+                                    <span class="input-group-append">
+                      <button type="button" class="btn btn-primary">Send</button>
+                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+    </div>
+
+</div>
+
+<%- include('../partials/scripts'); %>
+
+<script src="<%- baseUrl %>/assets/scripts/socket.io.js"></script>
+
+<script type="text/javascript">
+
+    let currentUser = JSON.parse(localStorage.getItem('user'));
+
+    $(function () {
+
+        if (!currentUser) {
+
+            window.location = '<%- baseUrl %>/login';
+        }
+
+        $('#user_name').html(currentUser.name);
+
+        getAllUsers()
+    });
+
+    let timeOut;
+
+    $('#search-user').on('keyup', function () {
+
+        if (timeOut) {
+            clearTimeout(timeOut);
+        }
+
+        timeOut = setTimeout(() => {
+            getAllUsers($(this).val());
+        }, 500);
+    })
+
+    function getAllUsers(searchValue = '') {
+
+        $.ajax({
+            url: '<%- baseUrl %>/api/users?searchKeyword=' + searchValue,
+            type: 'GET',
+            success: function (result) {
+
+                if (!result.data.length) {
+
+                    $('#users').html('<li class="nav-item"> <a href="javascript:;" class="nav-link"> <p>No Users Found</p></a></li>');
+                    return;
+                }
+
+                $('#users').html('');
+
+                result.data.forEach((user) => {
+
+                    $('#users').append('<li class="nav-item"> <a href="javascript:;" id="' + user.id + '" onclick="startChat($(this))" class="nav-link"> <p>' + user.name + '</p></a></li>')
+                })
+            }
+        });
+
+    }
+
+    function scrollDownChat() {
+
+        let message_body_elm = '.direct-chat-messages';
+
+        $(message_body_elm).animate({
+            scrollTop: $(message_body_elm)[0].scrollHeight - $(message_body_elm)[0].clientHeight + 100
+        }, 1000);
+
+    }
+
+    function startChat(elm) {
+
+        socket.emit("startChat", {user_id: elm.attr('id')});
+    }
+
+    function sendTypedMessage(elm, event) {
+
+        if (event.shiftKey && event.keyCode == 13) {
+            event.preventDefault();
+
+        } else if (event.keyCode === 13) {
+
+            socket.emit("sendMessage", {msg: elm.val()});
+
+            elm.val('')
+        }
+    }
+
+    function displayMessages(messages) {
+
+        messages.forEach(function (msg) {
+
+            if (msg.user._id == currentUser.id) {
+
+                $('.direct-chat-messages').append('<div class="direct-chat-msg right"><div class="direct-chat-infos clearfix"><span class="direct-chat-name float-right">' + msg.user.name + '</span> </div> <div class="direct-chat-text float-right" style="width: 398px;">' + msg.message + '</div> </div>');
+
+            } else {
+
+                $('.direct-chat-messages').append('<div class="direct-chat-msg"> <div class="direct-chat-infos clearfix"> <span class="direct-chat-name float-left">' + msg.user.name + '</span> </div> <div class="direct-chat-text float-left" style="width: 398px;">' + msg.message + '</div></div>')
+
+            }
+
+        });
+
+        scrollDownChat()
+    }
+
+</script>
+
+<script type="text/javascript">
+
+    let socket = io.connect('<%- baseUrl %>', {
+        transports: ['websocket'],
+        query: {token: currentUser.token},
+        upgrade: false
+    });
+
+    socket.on('error', function (err) {
+        alert(err)
+    });
+
+    socket.on('loadMessages', (data) => {
+
+        $('.card-footer').css('display','')
+
+        $('.direct-chat-messages').html('');
+
+        displayMessages(data.messages);
+
+    });
+
+    socket.on('message', (data) => {
+
+        displayMessages([data]);
+    });
+
+</script>
+
+</body>
+</html>
